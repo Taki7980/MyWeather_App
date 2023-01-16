@@ -1,0 +1,472 @@
+import { DateTime } from "luxon";
+
+const API_KEY = "ENTER YOUR API KEY";
+const BASE_URL = "https://api.openweathermap.org/data/2.5";
+
+// https://api.openweathermap.org/data/2.5/onecall?lat=48.8534&lon=2.3488&exclude=current,minutely,hourly,alerts&appid=1fa9ff4126d95b8db54f3897a208e91c&units=metric
+
+const getWeatherData = (infoType, searchParams) => {
+  const url = new URL(BASE_URL + "/" + infoType);
+  url.search = new URLSearchParams({ ...searchParams, appid: API_KEY });
+
+  return fetch(url).then((res) => res.json());
+};
+
+const formatCurrentWeather = (data) => {
+  const {
+    coord: { lat, lon },
+    main: { temp, feels_like, temp_min, temp_max, humidity },
+    name,
+    dt,
+    sys: { country, sunrise, sunset },
+    weather,
+    wind: { speed },
+  } = data;
+
+  const { main: details, icon } = weather[0];
+
+  return {
+    lat,
+    lon,
+    temp,
+    feels_like,
+    temp_min,
+    temp_max,
+    humidity,
+    name,
+    dt,
+    country,
+    sunrise,
+    sunset,
+    details,
+    icon,
+    speed,
+  };
+};
+
+const formatForecastWeather = (data) => {
+  let { timezone, daily, hourly } = data;
+  daily = daily.slice(1, 6).map((d) => {
+    return {
+      title: formatToLocalTime(d.dt, timezone, "ccc"),
+      temp: d.temp.day,
+      icon: d.weather[0].icon,
+    };
+  });
+
+  hourly = hourly.slice(1, 6).map((d) => {
+    return {
+      title: formatToLocalTime(d.dt, timezone, "hh:mm a"),
+      temp: d.temp,
+      icon: d.weather[0].icon,
+    };
+  });
+
+  return { timezone, daily, hourly };
+};
+
+const getFormattedWeatherData = async (searchParams) => {
+  const formattedCurrentWeather = await getWeatherData(
+    "weather",
+    searchParams
+  ).then(formatCurrentWeather);
+
+  const { lat, lon } = formattedCurrentWeather;
+
+  const formattedForecastWeather = await getWeatherData("onecall", {
+    lat,
+    lon,
+    exclude: "current,minutely,alerts",
+    units: searchParams.units,
+  }).then(formatForecastWeather);
+
+  return { ...formattedCurrentWeather, ...formattedForecastWeather };
+};
+
+const formatToLocalTime = (
+  secs,
+  zone,
+  format = "cccc, dd LLL yyyy' | Local time: 'hh:mm a"
+) => DateTime.fromSeconds(secs).setZone(zone).toFormat(format);
+
+const iconUrlFromCode = (code) =>
+  `http://openweathermap.org/img/wn/${code}@2x.png`;
+
+export default getFormattedWeatherData;
+
+export { formatToLocalTime, iconUrlFromCode };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================================================
+
+
+
+
+/* eslint-disable no-unused-vars */
+
+import { DateTime } from "luxon";
+
+// eslint-disable-next-line no-unused-vars
+const API_KEY_1 = 'd0021983faa8087d86550056965b0e5e';
+const API_KEY_2 = '633b6ae07da50c6152b0692609ae198b';
+
+const BASE_URL = 'https://api.openweathermap.org/data/2.5'
+const BASE_URL1 = 'https://api.openweathermap.org/data/3.0/onecall'
+
+
+const getWeatherData = (infoType, searchParams) => {
+    const url = new URL(BASE_URL1 + "?" + infoType);
+    url.search = new URLSearchParams({ ...searchParams, appid: API_KEY_1 });
+
+    return fetch(url).then(response => response.json())
+
+}
+const formatCurrentWeather = (data) => {
+    const {
+        coord: { lat, lon },
+        main: { temp, feels_like, temp_min, temp_max, humidity },
+        name,
+        dt,
+        sys: { country, sunrise, sunset },
+        weather,
+        wind: { speed }
+    } = data;
+
+    const { main: details, icon } = weather[0];
+
+
+    return { lat, lon, temp, humidity, feels_like, temp_min, temp_max, weather, name, details, icon, dt, country, sunrise, sunset, speed };
+}
+
+const formatForcastWeather = (data) => {
+    let { timezone, daily, hourly } = data;
+    daily = daily.slice(1, 6).map(d => {
+        return {
+            title: formatToLocalTime(d.dt, timezone, 'ccc'),
+            temp: data.temp.day,
+            icon: d.weather[0].icon,
+        }
+    });
+
+
+    hourly = hourly.slice(1, 6).map(d => {
+        return {
+            title: formatToLocalTime(d.dt, timezone, 'hh:mm a'),
+            temp: data.temp.day,
+            icon: d.weather[0].icon,
+        }
+    })
+
+    return {
+        daily,
+        hourly, timezone,
+    }
+}
+
+const getFormattedWeatherData = async (searchParams) => {
+    const formattedWeatherData = await getWeatherData('weather', searchParams).then(formatCurrentWeather)
+
+    const { lat, lon } = formatCurrentWeather;
+    const FormattedForcastWeather = await getWeatherData('onecall', {
+        lat, lon, exclude: 'current,minutly,alerts', units: searchParams.units
+    }).then(formatForcastWeather);
+
+    return {...formattedWeatherData, ...FormattedForcastWeather};
+}
+const formatToLocalTime = (secs, zone, format = "cccc,dd LLL yyyy' | Local Time: 'hh:mm a") => DateTime.fromSeconds(secs).setZone(zone).toFormat(format);
+
+export default getFormattedWeatherData;
+
+
+
+
+=====================================================
+
+import React from "react";
+import {
+  UilTemperature,
+  UilTear,
+  UilWind,
+  UilSun,
+  UilSunset,
+} from "@iconscout/react-unicons";
+import { formatToLocalTime, iconUrlFromCode } from "../services/weatherService";
+
+function TemperatureAndDetails({
+  weather: {
+    details,
+    icon,
+    temp,
+    temp_min,
+    temp_max,
+    sunrise,
+    sunset,
+    speed,
+    humidity,
+    feels_like,
+    timezone,
+  },
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-center py-6 text-xl text-cyan-300">
+        <p>{details}</p>
+      </div>
+
+      <div className="flex flex-row items-center justify-between text-white py-3">
+        <img src={iconUrlFromCode(icon)} alt="" className="w-20" />
+        <p className="text-5xl">{`${temp.toFixed()}°`}</p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilTemperature size={18} className="mr-1" />
+            Real fell:
+            <span className="font-medium ml-1">{`${feels_like.toFixed()}°`}</span>
+          </div>
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilTear size={18} className="mr-1" />
+            Humidity:
+            <span className="font-medium ml-1">{`${humidity.toFixed()}%`}</span>
+          </div>
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilWind size={18} className="mr-1" />
+            Wind:
+            <span className="font-medium ml-1">{`${speed.toFixed()} km/h`}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-row items-center justify-center space-x-2 text-white text-sm py-3">
+        <UilSun />
+        <p className="font-light">
+          Rise:{" "}
+          <span className="font-medium ml-1">
+            {formatToLocalTime(sunrise, timezone, "hh:mm a")}
+          </span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSunset />
+        <p className="font-light">
+          Set:{" "}
+          <span className="font-medium ml-1">
+            {formatToLocalTime(sunset, timezone, "hh:mm a")}
+          </span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSun />
+        <p className="font-light">
+          High:{" "}
+          <span className="font-medium ml-1">{`${temp_max.toFixed()}°`}</span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSun />
+        <p className="font-light">
+          Low:{" "}
+          <span className="font-medium ml-1">{`${temp_min.toFixed()}°`}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default TemperatureAndDetails;import React from "react";
+import {
+  UilTemperature,
+  UilTear,
+  UilWind,
+  UilSun,
+  UilSunset,
+} from "@iconscout/react-unicons";
+import { formatToLocalTime, iconUrlFromCode } from "../services/weatherService";
+
+function TemperatureAndDetails({
+  weather: {
+    details,
+    icon,
+    temp,
+    temp_min,
+    temp_max,
+    sunrise,
+    sunset,
+    speed,
+    humidity,
+    feels_like,
+    timezone,
+  },
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-center py-6 text-xl text-cyan-300">
+        <p>{details}</p>
+      </div>
+
+      <div className="flex flex-row items-center justify-between text-white py-3">
+        <img src={iconUrlFromCode(icon)} alt="" className="w-20" />
+        <p className="text-5xl">{`${temp.toFixed()}°`}</p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilTemperature size={18} className="mr-1" />
+            Real fell:
+            <span className="font-medium ml-1">{`${feels_like.toFixed()}°`}</span>
+          </div>
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilTear size={18} className="mr-1" />
+            Humidity:
+            <span className="font-medium ml-1">{`${humidity.toFixed()}%`}</span>
+          </div>
+          <div className="flex font-light text-sm items-center justify-center">
+            <UilWind size={18} className="mr-1" />
+            Wind:
+            <span className="font-medium ml-1">{`${speed.toFixed()} km/h`}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-row items-center justify-center space-x-2 text-white text-sm py-3">
+        <UilSun />
+        <p className="font-light">
+          Rise:{" "}
+          <span className="font-medium ml-1">
+            {formatToLocalTime(sunrise, timezone, "hh:mm a")}
+          </span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSunset />
+        <p className="font-light">
+          Set:{" "}
+          <span className="font-medium ml-1">
+            {formatToLocalTime(sunset, timezone, "hh:mm a")}
+          </span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSun />
+        <p className="font-light">
+          High:{" "}
+          <span className="font-medium ml-1">{`${temp_max.toFixed()}°`}</span>
+        </p>
+        <p className="font-light">|</p>
+
+        <UilSun />
+        <p className="font-light">
+          Low:{" "}
+          <span className="font-medium ml-1">{`${temp_min.toFixed()}°`}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default TemperatureAndDetails;
+
+
+
+===========================================================================
+
+import React from 'react'
+import {
+    // UilArrowUp,
+    // UilArrowDown,
+    // UilTemperature,
+    UilTear,
+    UilWind,
+    UilSun,
+    UilSunset,
+
+} from '@iconscout/react-unicons'
+import { iconUrlFromCode } from '../services/weatherService'
+
+function TemparatureAndDetails({ weather: {
+    details, icon, temp, temp_min, temp_max,sunrise,sunset,speed,humidity,feels_like,timezone
+} }) {
+    return (
+        <>
+            <div className="flex items-center justify-center py-6 text-xl text-cyan-400">
+                <p>{details}</p>
+            </div>
+            <div className="flex flex-row justify-between items-center text-white py-3">
+                <img src={iconUrlFromCode(icon)} className='w-20' alt="" />
+                <p className="text-5xl">{`${temp}°C`}</p>
+                <div className="flex flex-col space-y-2">
+                    <div className="flex font-light text-sm items-center justify-center">
+                        <UilWind size={18} className="mr-1" />
+                        Wind speed:
+                        <span className="font-medium ml-1">{`${speed} km/h`}</span>
+                    </div>
+                    <div className="flex font-light text-sm items-center justify-center">
+                        <UilSun size={18} className="mr-1" />
+                        Real fell:
+                        <span className="font-medium ml-1">32°</span>
+                    </div>
+                    <div className="flex font-light text-sm items-center justify-center">
+                        <UilTear size={18} className="mr-1" />
+                        Humidity:
+                        <span className="font-medium ml-1">{`${humidity}%`}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-row justify-center items-center py-3 text-white space-x-2 text-sm">
+                <UilSun />
+                <p className="font-light">Rise: <span className="font-medium ml-1">06:45 AM</span></p>
+                <p className="font-medium">|</p>
+
+                <UilSunset />
+                <p className="font-light">Set: <span className="font-medium ml-1">05:45 PM</span></p>
+                <p className="font-medium">|</p>
+
+                <UilSun />
+                <p className="font-light">High: <span className="font-medium ml-1">90°</span></p>
+                <p className="font-medium">|</p>
+
+                <UilSun />
+                <p className="font-light">Low: <span className="font-medium ml-1">40°</span></p>
+
+            </div>
+        </>
+    )
+}
+
+export default TemparatureAndDetails
+==========================================================
+<div className="flex flex-col items-center justify-center">
+                <p className="font-light text-lg"> 04:30 PM</p>
+                <img src="http://openweathermap.org/img/wn/01d@2x.png" alt="" srcset="" />
+                <p className="font-medium">22°</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center">
+                <p className="font-light text-lg"> 04:30 PM</p>
+                <img src="http://openweathermap.org/img/wn/01d@2x.png" alt="" srcset="" />
+                <p className="font-medium">22°</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center">
+                <p className="font-light text-lg"> 04:30 PM</p>
+                <img src="http://openweathermap.org/img/wn/01d@2x.png" alt="" srcset="" />
+                <p className="font-medium">22°</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center">
+                <p className="font-light text-lg"> 04:30 PM</p>
+                <img src="http://openweathermap.org/img/wn/01d@2x.png" alt="" srcset="" />
+                <p className="font-medium">22°</p>
+            </div>
