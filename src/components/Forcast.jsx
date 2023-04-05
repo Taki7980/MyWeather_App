@@ -18,10 +18,6 @@ function Forcast({ title, items }) {
                     </div>
                 ))}
             </div>
-
-
-
-
         </>
     )
 }

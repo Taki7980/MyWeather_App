@@ -30,9 +30,9 @@ function TopButtons({ setQuery }) {
     },
   ]
   return (
-    <div className='flex items-center justify-around my-6'>
+    <div className='flex lg:flex-row items-center justify-around py-5'>
       {cities.map((city) => (
-        <button key={city.id} className='text-white text-lg font-medium' onClick={() => setQuery({ q: city.title })}>{city.title}</button>
+        <button key={city.id} className='text-white lg:text-lg lg:font-medium sm:font-thin sm:mx-5' onClick={() => setQuery({ q: city.title })}>{city.title}</button>
       ))}
     </div>
   )
